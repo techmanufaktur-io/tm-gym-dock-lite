@@ -1,5 +1,5 @@
 // GymDock Service Worker · v1.0
-const CACHE = 'gymdock-v2';
+const CACHE = 'savvygym-v3';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
