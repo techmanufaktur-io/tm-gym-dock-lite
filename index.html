@@ -604,8 +604,11 @@ function initCheckinScreen() {
   } else {
     $('profileSection').style.display = 'none';
     $('registerSection').style.display = 'flex';
-    // Gym aus URL vorbelegen
     $('inputGym').value = URL_GYM;
+    if (URL_GYM) {
+      $('inputGym').readOnly = true;
+      $('inputGym').style.opacity = '0.5';
+    }
   }
 }
 
