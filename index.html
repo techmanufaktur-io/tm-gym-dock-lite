@@ -561,8 +561,11 @@ const DB = {
 const $ = id => document.getElementById(id);
 
 // ── URL params (z.B. ?gym=savvygym)
+// Gym from URL gets saved to localStorage so it survives homescreen install
 const URL_PARAMS = new URLSearchParams(window.location.search);
-const URL_GYM = URL_PARAMS.get('gym') || '';
+const _urlGym = URL_PARAMS.get('gym');
+if (_urlGym) DB.set('gymdock_gym', _urlGym);
+const URL_GYM = _urlGym || DB.get('gymdock_gym') || '';
 
 // ── State
 let currentScreen = 'screenCheckin';
