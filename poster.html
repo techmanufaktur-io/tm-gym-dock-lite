@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>savvyGYM Poster</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 210mm;
+      height: 297mm;
+      font-family: 'DM Sans', sans-serif;
+      background: #ffffff;
+      color: #111;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .poster {
+      width: 210mm;
+      height: 297mm;
+      padding: 20mm 18mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse 90% 40% at 50% 0%, rgba(11,92,170,0.06) 0%, transparent 60%),
+        #ffffff;
+    }
+
+    /* Decorative glow lines */
+    .poster::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #0b5caa, transparent);
+      opacity: 0.8;
+    }
+    .poster::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #0b5caa, transparent);
+      opacity: 0.5;
+    }
+
+    /* ── Logo ── */
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 56pt;
+      letter-spacing: 6px;
+      color: #0b5caa;
+      line-height: 1;
+    }
+    .logo span { color: #111; }
+    .tagline {
+      font-size: 10pt;
+      font-weight: 300;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #999;
+      margin-top: 4mm;
+    }
+
+    /* ── Headline ── */
+    .headline {
+      margin-top: 12mm;
+      text-align: center;
+    }
+    .headline h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 38pt;
+      letter-spacing: 3px;
+      line-height: 1.1;
+      color: #111;
+    }
+    .headline h1 em {
+      color: #0b5caa;
+      font-style: normal;
+      display: block;
+      font-size: 44pt;
+    }
+    .headline p {
+      margin-top: 5mm;
+      font-size: 12pt;
+      font-weight: 300;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    /* ── QR Section ── */
+    .qr-section {
+      margin-top: 14mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .qr-frame {
+      background: #ffffff;
+      padding: 6mm;
+      border-radius: 5mm;
+      border: 2px solid #e0e0e0;
+      box-shadow:
+        0 4px 24px rgba(0,0,0,0.08),
+        0 0 40px rgba(11,92,170,0.08);
+      position: relative;
+    }
+    .qr-frame img {
+      display: block;
+      width: 50mm;
+      height: 50mm;
+    }
+    .qr-label {
+      margin-top: 5mm;
+      font-size: 10pt;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #0b5caa;
+    }
+
+    /* ── Steps ── */
+    .steps {
+      margin-top: 14mm;
+      display: flex;
+      gap: 8mm;
+      width: 100%;
+      justify-content: center;
+    }
+    .step {
+      background: #f7f7f7;
+      border: 1px solid #e0e0e0;
+      border-radius: 4mm;
+      padding: 5mm 5mm;
+      width: 48mm;
+      text-align: center;
+    }
+    .step-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28pt;
+      color: #0b5caa;
+      line-height: 1;
+    }
+    .step-text {
+      margin-top: 2mm;
+      font-size: 9pt;
+      font-weight: 400;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    /* ── Free badge ── */
+    .free-badge {
+      margin-top: 12mm;
+      display: inline-flex;
+      align-items: center;
+      gap: 3mm;
+      background: rgba(11,92,170,0.08);
+      border: 2px solid #0b5caa;
+      border-radius: 20mm;
+      padding: 3mm 8mm;
+      font-size: 13pt;
+      font-weight: 600;
+      color: #0b5caa;
+      letter-spacing: 1px;
+    }
+
+    /* ── Notice ── */
+    .notice {
+      margin-top: 10mm;
+      max-width: 150mm;
+      text-align: center;
+      font-size: 8.5pt;
+      font-weight: 300;
+      color: #888;
+      line-height: 1.6;
+      padding: 0 5mm;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: auto;
+      text-align: center;
+      padding-top: 8mm;
+    }
+    .footer-line {
+      width: 30mm;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #ccc, transparent);
+      margin: 0 auto 4mm;
+    }
+    .footer-text {
+      font-size: 8pt;
+      color: #999;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 400;
+    }
+
+    @media print {
+      html, body {
+        width: 210mm;
+        height: 297mm;
+      }
+      .poster {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="poster">
+
+  <div class="logo">savvy<span>GYM</span></div>
+  <div class="tagline">GymDock by techmanufaktur</div>
+
+  <div class="headline">
+    <h1>Scan. Register.<em>Work out.</em></h1>
+    <p>Scan the QR code below to create your free profile<br/>and check in before every session.</p>
+  </div>
+
+  <div class="qr-section">
+    <div class="qr-frame">
+      <img
+        src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https%3A%2F%2Ftechmanufaktur-io.github.io%2Ftm-gym-dock-lite%2F%3Fgym%3DsavvyGYM&color=0a0a0a&bgcolor=ffffff&format=svg"
+        alt="QR Code – savvyGYM Check-in"
+      />
+    </div>
+    <div class="qr-label">Scan to register</div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Scan the<br/>QR code</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Enter name<br/>& email</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Check in<br/>every visit</div>
+    </div>
+  </div>
+
+
+  <div class="notice">
+    This gym is free to use. Please register and check in before every session.
+    We reserve the right to restrict access in case of improper use or damage to equipment.
+  </div>
+
+  <div class="footer">
+    <div class="footer-line"></div>
+    <div class="footer-text">GymDock by techmanufaktur</div>
+  </div>
+
+</div>
+
+</body>
+</html>

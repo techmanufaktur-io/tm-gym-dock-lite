@@ -431,7 +431,7 @@
           <input id="inputName" type="text" placeholder="John Doe" autocomplete="name" />
         </div>
         <div class="field-group">
-          <label for="inputEmail">Email (optional)</label>
+          <label for="inputEmail">Email</label>
           <input id="inputEmail" type="email" placeholder="john@example.com" autocomplete="email" />
         </div>
         <div class="field-group">
@@ -624,6 +624,7 @@ $('btnRegister').addEventListener('click', () => {
   const email = $('inputEmail').value.trim();
   const gym = $('inputGym').value.trim() || URL_GYM || 'savvyGYM';
   if (!name) { showToast('Please enter your name', true); return; }
+  if (!email) { showToast('Please enter your email', true); return; }
   DB.set('gymdock_profile', { name, email, gym });
   initCheckinScreen();
   showToast('Profile saved');
