@@ -648,11 +648,10 @@ async function doCheckIn(profile) {
   const apiUrl = API_URL || DB.get('gymdock_settings')?.apiUrl;
   if (apiUrl && !apiUrl.includes('DEINE_ID_HIER')) {
     try {
-      const res = await fetch(apiUrl, {
+      await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry),
-        mode: 'no-cors' // Google Apps Script requires this
+        mode: 'no-cors'
       });
       $('metaStatus').textContent = '✅ Eingeloggt';
     } catch (err) {
