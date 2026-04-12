@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GymDock</title>
+  <meta name="description" content="Check-in für dein Gym. Einfach. Schnell." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --card: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #c8f135;
+      --accent-dim: #8fad1f;
+      --text: #f0f0f0;
+      --muted: #666;
+      --danger: #ff4444;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(200,241,53,0.08) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    header {
+      padding: 24px 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 3px;
+      color: var(--accent);
+    }
+    .logo span { color: var(--text); }
+    .time-badge {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    /* ── Main content ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 24px 40px;
+      gap: 20px;
+    }
+
+    /* ── Screen system ── */
+    .screen { display: none; flex-direction: column; gap: 20px; animation: fadeUp 0.3s ease; }
+    .screen.active { display: flex; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Welcome Screen ── */
+    .welcome-hero {
+      text-align: center;
+      padding: 20px 0 10px;
+    }
+    .welcome-hero h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 18vw, 88px);
+      line-height: 0.9;
+      letter-spacing: 2px;
+      color: var(--text);
+    }
+    .welcome-hero h1 em {
+      color: var(--accent);
+      font-style: normal;
+      display: block;
+    }
+    .welcome-hero p {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 300;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Form ── */
+    .field-group { display: flex; flex-direction: column; gap: 12px; }
+    label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    input {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    input:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--muted); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 18px 24px;
+      border-radius: var(--radius);
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0a0a;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    /* ── Saved profile card ── */
+    .profile-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .avatar {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0a0a0a;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 1px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .profile-info { flex: 1; min-width: 0; }
+    .profile-name { font-size: 18px; font-weight: 500; }
+    .profile-sub { font-size: 13px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Success Screen ── */
+    .success-icon {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(200,241,53,0.12);
+      border: 2px solid var(--accent);
+      margin: 20px auto 0;
+      display: flex; align-items: center; justify-content: center;
+      animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .success-icon svg { width: 36px; height: 36px; color: var(--accent); }
+
+    .success-text { text-align: center; }
+    .success-text h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+    .success-text p { color: var(--muted); font-size: 15px; margin-top: 6px; }
+
+    .checkin-meta {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+    .meta-row .key { color: var(--muted); }
+    .meta-row .val { font-weight: 500; color: var(--text); }
+
+    /* ── History Screen ── */
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: var(--text);
+    }
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-date { font-size: 14px; font-weight: 500; }
+    .history-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .history-badge {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      background: rgba(200,241,53,0.12);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 14px 22px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 999;
+      white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.error { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      padding: 12px 24px 28px;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 8px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 12px;
+      transition: color 0.2s, background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .nav-btn svg { width: 20px; height: 20px; }
+    .nav-btn span { font-size: 10px; font-weight: 500; letter-spacing: 0.5px; }
+    .nav-btn.active { color: var(--accent); background: rgba(200,241,53,0.06); }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(10,10,10,0.3);
+      border-top-color: #0a0a0a;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Settings screen ── */
+    .settings-section { display: flex; flex-direction: column; gap: 10px; }
+    .settings-row {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    .settings-row .s-label { color: var(--text); font-weight: 500; }
+    .settings-row .s-value { color: var(--muted); font-size: 13px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .settings-input-wrap { width: 100%; }
+    .settings-input-wrap input { font-size: 14px; padding: 12px 14px; }
+
+    .version-note { text-align: center; font-size: 11px; color: var(--muted); padding-top: 8px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">Gym<span>Dock</span></div>
+    <div class="time-badge" id="timeBadge">--:--</div>
+  </header>
+
+  <main>
+
+    <!-- ═══ SCREEN: Check-in ═══ -->
+    <div class="screen active" id="screenCheckin">
+
+      <!-- If profile saved: show profile + 1-tap check-in -->
+      <div id="profileSection" style="display:none">
+        <div class="welcome-hero">
+          <h1>Bereit<em>zu starten?</em></h1>
+          <p>Einmal tippen — fertig.</p>
+        </div>
+
+        <div class="profile-card">
+          <div class="avatar" id="profileAvatar">?</div>
+          <div class="profile-info">
+            <div class="profile-name" id="profileName">—</div>
+            <div class="profile-sub" id="profileEmail">—</div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="btnCheckIn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Jetzt einchecken
+        </button>
+
+        <button class="btn btn-ghost" id="btnSwitchUser">Anderer Nutzer</button>
+      </div>
+
+      <!-- If no profile: registration form -->
+      <div id="registerSection" style="display:none">
+        <div class="welcome-hero">
+          <h1>Dein<em>Gym.</em></h1>
+          <p>Einmal einrichten — danach 1-Tap.</p>
+        </div>
+
+        <div class="field-group">
+          <label for="inputName">Dein Name</label>
+          <input id="inputName" type="text" placeholder="Max Mustermann" autocomplete="name" />
+        </div>
+        <div class="field-group">
+          <label for="inputEmail">E-Mail (optional)</label>
+          <input id="inputEmail" type="email" placeholder="max@beispiel.de" autocomplete="email" />
+        </div>
+
+        <button class="btn btn-primary" id="btnRegister">
+          Profil speichern & einchecken
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ═══ SCREEN: Success ═══ -->
+    <div class="screen" id="screenSuccess">
+      <div class="success-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="success-text">
+        <h2>Eingecheckt!</h2>
+        <p id="successGreeting">Viel Spaß beim Training.</p>
+      </div>
+      <div class="checkin-meta">
+        <div class="meta-row">
+          <span class="key">Name</span>
+          <span class="val" id="metaName">—</span>
+        </div>
+        <div class="meta-row">
+          <span class="key">Datum</span>
+          <span class="val" id="metaDate">—</span>
+        </div>
+        <div class="meta-row">
+          <span class="key">Uhrzeit</span>
+          <span class="val" id="metaTime">—</span>
+        </div>
+        <div class="meta-row">
+          <span class="key">Status</span>
+          <span class="val" id="metaStatus">⏳ Wird gesendet…</span>
+        </div>
+      </div>
+      <button class="btn btn-ghost" id="btnBackFromSuccess">← Zurück</button>
+    </div>
+
+    <!-- ═══ SCREEN: History ═══ -->
+    <div class="screen" id="screenHistory">
+      <div class="section-title">Meine Einheiten</div>
+      <div class="history-list" id="historyList">
+        <div class="empty-state">Noch keine Check-ins</div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN: Settings ═══ -->
+    <div class="screen" id="screenSettings">
+      <div class="section-title">Einstellungen</div>
+
+      <div class="settings-section">
+        <label>Backend URL (Google Apps Script)</label>
+        <div class="settings-input-wrap">
+          <input id="settingsApiUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" />
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <label>Gym Name (optional)</label>
+        <div class="settings-input-wrap">
+          <input id="settingsGymName" type="text" placeholder="Mein Fitness Studio" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btnSaveSettings">Speichern</button>
+
+      <div class="divider"></div>
+
+      <div class="settings-section">
+        <div class="settings-row">
+          <span class="s-label">Version</span>
+          <span class="s-value">GymDock v1.0</span>
+        </div>
+        <div class="settings-row">
+          <span class="s-label">Gespeicherte Check-ins</span>
+          <span class="s-value" id="settingsCheckinCount">0</span>
+        </div>
+      </div>
+
+      <button class="btn btn-danger" id="btnClearProfile">Profil löschen</button>
+      <p class="version-note">Powered by savvytec · GymDock Phase 1</p>
+    </div>
+
+  </main>
+
+  <nav>
+    <button class="nav-btn active" data-screen="screenCheckin" id="navCheckin">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>Check-in</span>
+    </button>
+    <button class="nav-btn" data-screen="screenHistory" id="navHistory">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <span>Verlauf</span>
+    </button>
+    <button class="nav-btn" data-screen="screenSettings" id="navSettings">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Einstellungen</span>
+    </button>
+  </nav>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+//  GymDock PWA · Phase 1
+//  Daniel @ savvytec · 2025
+// ════════════════════════════════════════
+
+const DB = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+  remove: k => localStorage.removeItem(k)
+};
+
+const $ = id => document.getElementById(id);
+
+// ── State
+let currentScreen = 'screenCheckin';
+
+// ── Time badge
+function updateClock() {
+  const now = new Date();
+  $('timeBadge').textContent = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ── Navigation
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.screen;
+    if (target === 'screenHistory') renderHistory();
+    if (target === 'screenSettings') renderSettings();
+    showScreen(target);
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+  currentScreen = id;
+}
+
+// ── Init: decide which sub-view to show
+function initCheckinScreen() {
+  const profile = DB.get('gymdock_profile');
+  if (profile && profile.name) {
+    $('profileSection').style.display = 'block';
+    $('registerSection').style.display = 'none';
+    $('profileName').textContent = profile.name;
+    $('profileEmail').textContent = profile.email || 'Kein E-Mail';
+    $('profileAvatar').textContent = initials(profile.name);
+  } else {
+    $('profileSection').style.display = 'none';
+    $('registerSection').style.display = 'block';
+  }
+}
+
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+}
+
+initCheckinScreen();
+
+// ── Register / Save profile
+$('btnRegister').addEventListener('click', () => {
+  const name = $('inputName').value.trim();
+  const email = $('inputEmail').value.trim();
+  if (!name) { showToast('Bitte deinen Namen eingeben', true); return; }
+  DB.set('gymdock_profile', { name, email });
+  initCheckinScreen();
+  doCheckIn({ name, email });
+});
+
+// ── 1-tap Check-in
+$('btnCheckIn').addEventListener('click', () => {
+  const profile = DB.get('gymdock_profile');
+  if (!profile) return;
+  doCheckIn(profile);
+});
+
+// ── Switch user
+$('btnSwitchUser').addEventListener('click', () => {
+  $('profileSection').style.display = 'none';
+  $('registerSection').style.display = 'block';
+  $('inputName').value = '';
+  $('inputEmail').value = '';
+});
+
+// ── Core check-in logic
+async function doCheckIn(profile) {
+  const now = new Date();
+  const entry = {
+    name: profile.name,
+    email: profile.email || '',
+    timestamp: now.toISOString(),
+    date: now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }),
+    time: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+    gym: DB.get('gymdock_settings')?.gymName || 'GymDock'
+  };
+
+  // Save locally first
+  const history = DB.get('gymdock_history') || [];
+  history.unshift(entry);
+  if (history.length > 50) history.pop(); // keep last 50
+  DB.set('gymdock_history', history);
+
+  // Show success screen
+  $('metaName').textContent = entry.name;
+  $('metaDate').textContent = entry.date;
+  $('metaTime').textContent = entry.time;
+  $('metaStatus').textContent = '⏳ Wird gesendet…';
+  $('successGreeting').textContent = getMotivation();
+  showScreen('screenSuccess');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  // Send to backend (non-blocking)
+  const apiUrl = DB.get('gymdock_settings')?.apiUrl;
+  if (apiUrl) {
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry),
+        mode: 'no-cors' // Google Apps Script requires this
+      });
+      $('metaStatus').textContent = '✅ Eingeloggt';
+    } catch (err) {
+      $('metaStatus').textContent = '⚠️ Offline gespeichert';
+    }
+  } else {
+    $('metaStatus').textContent = '💾 Lokal gespeichert (kein Backend)';
+  }
+}
+
+// ── Back from success
+$('btnBackFromSuccess').addEventListener('click', () => {
+  showScreen('screenCheckin');
+  initCheckinScreen();
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  $('navCheckin').classList.add('active');
+});
+
+// ── History
+function renderHistory() {
+  const history = DB.get('gymdock_history') || [];
+  const list = $('historyList');
+  if (!history.length) {
+    list.innerHTML = '<div class="empty-state">Noch keine Check-ins</div>';
+    return;
+  }
+  list.innerHTML = history.map(e => `
+    <div class="history-item">
+      <div>
+        <div class="history-date">${e.date || formatDate(e.timestamp)}</div>
+        <div class="history-time">${e.time || formatTime(e.timestamp)}</div>
+      </div>
+      <div class="history-badge">✓ eingecheckt</div>
+    </div>
+  `).join('');
+}
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Settings
+function renderSettings() {
+  const s = DB.get('gymdock_settings') || {};
+  $('settingsApiUrl').value = s.apiUrl || '';
+  $('settingsGymName').value = s.gymName || '';
+  const history = DB.get('gymdock_history') || [];
+  $('settingsCheckinCount').textContent = history.length;
+}
+
+$('btnSaveSettings').addEventListener('click', () => {
+  DB.set('gymdock_settings', {
+    apiUrl: $('settingsApiUrl').value.trim(),
+    gymName: $('settingsGymName').value.trim()
+  });
+  showToast('Gespeichert ✓');
+});
+
+$('btnClearProfile').addEventListener('click', () => {
+  if (!confirm('Profil wirklich löschen?')) return;
+  DB.remove('gymdock_profile');
+  initCheckinScreen();
+  showScreen('screenCheckin');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  $('navCheckin').classList.add('active');
+  showToast('Profil gelöscht');
+});
+
+// ── Toast
+let toastTimer;
+function showToast(msg, isError = false) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = isError ? 'error show' : 'show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 2800);
+}
+
+// ── Motivational messages
+function getMotivation() {
+  const msgs = [
+    'Viel Spaß beim Training! 💪',
+    'Heute ist ein guter Tag! 🔥',
+    'Mach das Beste draus! ⚡',
+    'Lass es krachen! 🏋️',
+    'Du bist dabei — das zählt! 🎯',
+  ];
+  return msgs[Math.floor(Math.random() * msgs.length)];
+}
+
+// ── PWA Service Worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
