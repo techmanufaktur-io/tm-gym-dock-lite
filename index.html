@@ -68,6 +68,12 @@
       color: var(--accent);
     }
     .logo span { color: var(--text); }
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
     .time-badge {
       font-size: 12px;
       color: var(--muted);
@@ -76,6 +82,21 @@
       padding: 6px 12px;
       border-radius: 20px;
       font-weight: 500;
+    }
+    .timer-badge {
+      font-size: 11px;
+      color: var(--accent);
+      background: rgba(0,212,255,0.1);
+      border: 1px solid rgba(0,212,255,0.25);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+      display: none;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
     }
 
     /* ── Main content ── */
@@ -188,6 +209,11 @@
       border: 1px solid var(--danger);
       color: var(--danger);
     }
+    .btn-checkout {
+      background: linear-gradient(135deg, #ff6b35, #ff8c42);
+      color: #fff;
+    }
+    .btn-checkout:hover { opacity: 0.9; }
 
     /* ── Saved profile card ── */
     .profile-card {
@@ -542,7 +568,10 @@
 
   <header>
     <div class="logo">savvy<span>GYM</span></div>
-    <div class="time-badge" id="timeBadge">--:--</div>
+    <div class="header-right">
+      <div class="time-badge" id="timeBadge">--:--</div>
+      <div class="timer-badge" id="timerBadge">● 0:00</div>
+    </div>
   </header>
 
   <main>
@@ -552,9 +581,9 @@
 
       <!-- If profile saved: show profile + 1-tap check-in -->
       <div id="profileSection" style="display:none">
-        <div class="welcome-hero">
-          <h1>Ready<em>to go?</em></h1>
-          <p>One tap — done.</p>
+        <div class="welcome-hero" id="heroSection">
+          <h1 id="heroTitle">Ready<em id="heroTitleEm">to go?</em></h1>
+          <p id="heroSub">One tap — done.</p>
         </div>
 
         <div class="profile-card">
@@ -567,19 +596,9 @@
 
         <!-- Active session: checkout -->
         <div id="activeSession" style="display:none">
-          <div class="checkin-meta">
-            <div class="meta-row">
-              <span class="key">Checked in since</span>
-              <span class="val" id="activeTime">—</span>
-            </div>
-            <div class="meta-row">
-              <span class="key">Duration</span>
-              <span class="val" id="activeDuration">—</span>
-            </div>
-          </div>
-          <button class="btn btn-danger" id="btnCheckOut" style="margin-top:12px">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            Check out
+          <button class="btn btn-checkout" id="btnCheckOut">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            Finish workout
           </button>
         </div>
 
@@ -847,13 +866,28 @@ const URL_GYM = _urlGym || DB.get('gymdock_gym') || '';
 // ── State
 let currentScreen = 'screenCheckin';
 
-// ── Time badge
+// ── Time badge + workout timer
 function updateClock() {
   const now = new Date();
   $('timeBadge').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  // Update workout timer in header
+  const session = DB.get('gymdock_active_session');
+  if (session) {
+    const secs = Math.floor((now.getTime() - new Date(session.checkinTime).getTime()) / 1000);
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    const pad = n => String(n).padStart(2, '0');
+    $('timerBadge').textContent = h > 0
+      ? `● ${h}:${pad(m)}:${pad(s)}`
+      : `● ${m}:${pad(s)}`;
+    $('timerBadge').style.display = 'block';
+  } else {
+    $('timerBadge').style.display = 'none';
+  }
 }
 updateClock();
-setInterval(updateClock, 10000);
+setInterval(updateClock, 1000); // every second for smooth timer
 
 // ── Navigation
 document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -903,13 +937,15 @@ function initCheckinScreen() {
     if (session) {
       $('activeSession').style.display = 'block';
       $('btnCheckIn').style.display = 'none';
-      $('activeTime').textContent = new Date(session.checkinTime)
-        .toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      updateActiveDuration();
+      $('heroTitle').innerHTML = 'You\'re<em id="heroTitleEm">training!</em>';
+      $('heroSub').textContent = 'Tap below when you\'re done.';
     } else {
       $('activeSession').style.display = 'none';
       $('btnCheckIn').style.display = 'flex';
+      $('heroTitle').innerHTML = 'Ready<em id="heroTitleEm">to go?</em>';
+      $('heroSub').textContent = 'One tap — done.';
     }
+    updateClock();
   } else {
     // New user OR existing user missing company field
     $('profileSection').style.display = 'none';
@@ -926,16 +962,6 @@ function initCheckinScreen() {
   }
 }
 
-// ── Live duration counter
-function updateActiveDuration() {
-  const session = DB.get('gymdock_active_session');
-  if (!session) return;
-  const mins = Math.floor((Date.now() - new Date(session.checkinTime).getTime()) / 60000);
-  $('activeDuration').textContent = formatDuration(mins);
-}
-setInterval(() => {
-  if (DB.get('gymdock_active_session')) updateActiveDuration();
-}, 30000);
 
 function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);

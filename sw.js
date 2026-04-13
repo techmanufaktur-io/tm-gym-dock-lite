@@ -1,11 +1,13 @@
 // savvyGYM Service Worker
 // Bump CACHE version on every deploy to trigger updates
-const CACHE = 'savvygym-v7';
+const CACHE = 'savvygym-v8';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
+  // DO NOT call skipWaiting() here — the new SW must enter "waiting"
+  // state so the client can detect it and show the update banner.
+  // skipWaiting() is called only when the user clicks "Update".
 });
 
 self.addEventListener('activate', e => {
