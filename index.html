@@ -479,6 +479,10 @@
           <input id="inputEmail" type="email" placeholder="john@example.com" autocomplete="email" />
         </div>
         <div class="field-group">
+          <label for="inputCompany">Company (optional)</label>
+          <input id="inputCompany" type="text" placeholder="Acme Corp" autocomplete="organization" />
+        </div>
+        <div class="field-group">
           <label for="inputGym">Gym</label>
           <input id="inputGym" type="text" placeholder="savvyGYM Studio" />
         </div>
@@ -657,15 +661,24 @@ function showScreen(id) {
 // ── Init: decide which sub-view to show
 function initCheckinScreen() {
   const profile = DB.get('gymdock_profile');
-  if (profile && profile.name) {
+  // Profile complete: name + company must exist
+  if (profile && profile.name && ('company' in profile)) {
     $('profileSection').style.display = 'block';
     $('registerSection').style.display = 'none';
     $('profileName').textContent = profile.name;
-    $('profileEmail').textContent = profile.gym || profile.email || 'No email';
+    $('profileEmail').textContent = profile.company
+      ? `${profile.company} · ${profile.gym || ''}`
+      : profile.gym || profile.email || 'No email';
     $('profileAvatar').textContent = initials(profile.name);
   } else {
+    // New user OR existing user missing company field
     $('profileSection').style.display = 'none';
     $('registerSection').style.display = 'flex';
+    if (profile && profile.name) {
+      // Pre-fill known fields for returning users
+      $('inputName').value = profile.name;
+      $('inputEmail').value = profile.email || '';
+    }
     $('inputGym').value = URL_GYM;
     if (URL_GYM) {
       $('inputGym').readOnly = true;
@@ -684,10 +697,11 @@ initCheckinScreen();
 $('btnRegister').addEventListener('click', () => {
   const name = $('inputName').value.trim();
   const email = $('inputEmail').value.trim();
+  const company = $('inputCompany').value.trim();
   const gym = $('inputGym').value.trim() || URL_GYM || 'savvyGYM';
   if (!name) { showToast('Please enter your name', true); return; }
   if (!email) { showToast('Please enter your email', true); return; }
-  DB.set('gymdock_profile', { name, email, gym });
+  DB.set('gymdock_profile', { name, email, company, gym });
   initCheckinScreen();
   showToast('Profile saved');
 });
@@ -705,6 +719,7 @@ $('btnSwitchUser').addEventListener('click', () => {
   $('registerSection').style.display = 'flex';
   $('inputName').value = '';
   $('inputEmail').value = '';
+  $('inputCompany').value = '';
   $('inputGym').value = URL_GYM;
 });
 
@@ -714,6 +729,7 @@ async function doCheckIn(profile) {
   const entry = {
     name: profile.name,
     email: profile.email || '',
+    company: profile.company || '',
     timestamp: now.toISOString(),
     date: now.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }),
     time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
@@ -744,6 +760,7 @@ async function doCheckIn(profile) {
       const url = new URL(apiUrl);
       url.searchParams.set('name', entry.name);
       url.searchParams.set('email', entry.email);
+      url.searchParams.set('company', entry.company);
       url.searchParams.set('timestamp', entry.timestamp);
       url.searchParams.set('date', entry.date);
       url.searchParams.set('time', entry.time);
