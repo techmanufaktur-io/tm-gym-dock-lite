@@ -1,5 +1,6 @@
-// GymDock Service Worker · v1.0
-const CACHE = 'savvygym-v3';
+// savvyGYM Service Worker
+// Bump CACHE version on every deploy to trigger updates
+const CACHE = 'savvygym-v4';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -14,13 +15,18 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Listen for skip-waiting message from client
+self.addEventListener('message', e => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
+});
+
 self.addEventListener('fetch', e => {
-  // Network-first for API calls, cache-first for assets
+  // Network-first for API calls
   if (e.request.url.includes('script.google.com')) {
     e.respondWith(fetch(e.request).catch(() => new Response('{"error":"offline"}', { headers: { 'Content-Type': 'application/json' } })));
     return;
   }
-  // Network-first for HTML, cache-first for other assets
+  // Network-first for HTML
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request).then(res => {
