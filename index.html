@@ -383,6 +383,41 @@
 
     .version-note { text-align: center; font-size: 11px; color: var(--muted); padding-top: 8px; }
 
+    /* ── Rules Screen ── */
+    .rules-list { display: flex; flex-direction: column; gap: 10px; }
+    .rule-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .rule-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: var(--accent);
+      line-height: 1;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+    }
+    .rule-content { flex: 1; }
+    .rule-content strong { font-size: 14px; font-weight: 500; display: block; margin-bottom: 4px; }
+    .rule-content p { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0; }
+    .rules-agreement {
+      margin-top: 8px;
+      padding: 14px 16px;
+      background: rgba(0,212,255,0.06);
+      border: 1px solid rgba(0,212,255,0.15);
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      text-align: center;
+    }
+
     /* ── Install Banner ── */
     .install-banner {
       position: fixed;
@@ -532,6 +567,65 @@
       </div>
     </div>
 
+    <!-- ═══ SCREEN: Rules ═══ -->
+    <div class="screen" id="screenRules">
+      <div class="section-title">Rules & Terms of Use</div>
+      <div class="rules-list" id="rulesList">
+        <div class="rule-card">
+          <div class="rule-num">1</div>
+          <div class="rule-content">
+            <strong>Check in before every session</strong>
+            <p>Registration and check-in via the savvyGYM app is mandatory before every use. Unregistered use is not permitted.</p>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">2</div>
+          <div class="rule-content">
+            <strong>Free of charge — use at your own risk</strong>
+            <p>The gym equipment is provided free of charge by savvytec. All use is entirely at your own risk. There is no insurance coverage, no supervision, and no liability assumed by savvytec or the facility operator.</p>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">3</div>
+          <div class="rule-content">
+            <strong>No liability for injuries or damages</strong>
+            <p>savvytec accepts no liability for personal injuries, health issues, or damage to personal property that may occur during the use of the equipment.</p>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">4</div>
+          <div class="rule-content">
+            <strong>Handle equipment with care</strong>
+            <p>Please treat all equipment responsibly. Return weights, wipe down machines after use, and report any damage immediately. Intentional or negligent damage may result in liability claims.</p>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">5</div>
+          <div class="rule-content">
+            <strong>Access may be restricted</strong>
+            <p>We reserve the right to restrict or revoke gym access at any time in case of misuse, improper handling of equipment, or violation of these rules.</p>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">6</div>
+          <div class="rule-content">
+            <strong>Keep the space clean</strong>
+            <p>Leave the gym as you found it. Dispose of trash, use a towel on shared surfaces, and keep the area tidy for the next person.</p>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">7</div>
+          <div class="rule-content">
+            <strong>No unsupervised minors</strong>
+            <p>Use of the gym is only permitted for persons aged 16 and above. Minors under 18 require written parental consent.</p>
+          </div>
+        </div>
+      </div>
+      <div class="rules-agreement">
+        By registering and checking in, you confirm that you have read, understood, and accepted these rules.
+      </div>
+    </div>
+
     <!-- ═══ SCREEN: Settings ═══ -->
     <div class="screen" id="screenSettings">
       <div class="section-title">Settings</div>
@@ -579,6 +673,10 @@
     <button class="nav-btn" data-screen="screenHistory" id="navHistory">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       <span>History</span>
+    </button>
+    <button class="nav-btn" data-screen="screenRules" id="navRules">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>Rules</span>
     </button>
     <button class="nav-btn" data-screen="screenSettings" id="navSettings">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>

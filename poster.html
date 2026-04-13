@@ -215,14 +215,73 @@
       font-weight: 400;
     }
 
+    /* ── Page 2: Rules ── */
+    .page2 { page-break-before: always; }
+    .page2 .headline { margin-top: 8mm; }
+
+    .rules {
+      margin-top: 10mm;
+      display: flex;
+      flex-direction: column;
+      gap: 5mm;
+      width: 100%;
+    }
+    .rule {
+      display: flex;
+      gap: 5mm;
+      align-items: flex-start;
+      padding: 4mm 5mm;
+      background: #f7f7f7;
+      border: 1px solid #e8e8e8;
+      border-radius: 3mm;
+    }
+    .rule-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22pt;
+      color: #0b5caa;
+      line-height: 1;
+      flex-shrink: 0;
+      width: 10mm;
+      text-align: center;
+    }
+    .rule-body { flex: 1; }
+    .rule-title {
+      font-size: 10pt;
+      font-weight: 600;
+      color: #111;
+      margin-bottom: 1mm;
+    }
+    .rule-text {
+      font-size: 8.5pt;
+      font-weight: 300;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .agreement {
+      margin-top: 8mm;
+      padding: 5mm 6mm;
+      background: rgba(11,92,170,0.06);
+      border: 1px solid rgba(11,92,170,0.2);
+      border-radius: 3mm;
+      font-size: 8.5pt;
+      font-weight: 400;
+      color: #333;
+      line-height: 1.6;
+      text-align: center;
+    }
+
     @media print {
       html, body {
         width: 210mm;
-        height: 297mm;
+        height: auto;
       }
       .poster {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+      }
+      .page2 {
+        page-break-before: always;
       }
     }
   </style>
@@ -268,6 +327,80 @@
   <div class="notice">
     This gym is free to use. Please register and check in before every session.
     We reserve the right to restrict access in case of improper use or damage to equipment.
+  </div>
+
+  <div class="footer">
+    <div class="footer-line"></div>
+    <div class="footer-text">Made with <span style="color:#e25555;">&#10084;</span> by techmanufaktur</div>
+  </div>
+
+</div>
+
+<!-- ═══ PAGE 2: Rules ═══ -->
+<div class="poster page2">
+
+  <div class="logo">savvy<span>GYM</span></div>
+  <div class="tagline">GymDock by techmanufaktur</div>
+
+  <div class="headline">
+    <h1>Rules &<em>Terms of Use</em></h1>
+    <p>Please read carefully before using the gym.</p>
+  </div>
+
+  <div class="rules">
+    <div class="rule">
+      <div class="rule-num">1</div>
+      <div class="rule-body">
+        <div class="rule-title">Check in before every session</div>
+        <div class="rule-text">Registration and check-in via the savvyGYM app is mandatory before every use. Unregistered use is not permitted.</div>
+      </div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">2</div>
+      <div class="rule-body">
+        <div class="rule-title">Free of charge — use at your own risk</div>
+        <div class="rule-text">The gym equipment is provided free of charge by savvytec. All use is entirely at your own risk. There is no insurance coverage, no supervision, and no liability assumed by savvytec or the facility operator.</div>
+      </div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">3</div>
+      <div class="rule-body">
+        <div class="rule-title">No liability for injuries or damages</div>
+        <div class="rule-text">savvytec accepts no liability for personal injuries, health issues, or damage to personal property that may occur during the use of the equipment.</div>
+      </div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">4</div>
+      <div class="rule-body">
+        <div class="rule-title">Handle equipment with care</div>
+        <div class="rule-text">Please treat all equipment responsibly. Return weights, wipe down machines after use, and report any damage immediately. Intentional or negligent damage may result in liability claims.</div>
+      </div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">5</div>
+      <div class="rule-body">
+        <div class="rule-title">Access may be restricted</div>
+        <div class="rule-text">We reserve the right to restrict or revoke gym access at any time in case of misuse, improper handling of equipment, or violation of these rules.</div>
+      </div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">6</div>
+      <div class="rule-body">
+        <div class="rule-title">Keep the space clean</div>
+        <div class="rule-text">Leave the gym as you found it. Dispose of trash, use a towel on shared surfaces, and keep the area tidy for the next person.</div>
+      </div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">7</div>
+      <div class="rule-body">
+        <div class="rule-title">No unsupervised minors</div>
+        <div class="rule-text">Use of the gym is only permitted for persons aged 16 and above. Minors under 18 require written parental consent.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agreement">
+    By registering and checking in via savvyGYM, you confirm that you have read, understood, and accepted these rules and terms of use.
   </div>
 
   <div class="footer">
