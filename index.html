@@ -908,7 +908,7 @@ function showScreen(id) {
 }
 
 // ── Auto-checkout: close stale sessions (>2h) silently
-const AUTO_CHECKOUT_MINUTES = 120;
+const AUTO_CHECKOUT_MINUTES = 180; // 3 hours max
 function autoCheckoutIfNeeded() {
   const session = DB.get('gymdock_active_session');
   if (!session) return;
@@ -1065,21 +1065,20 @@ function closeSession(session, silent) {
   const now = new Date();
   const checkinTime = new Date(session.checkinTime);
   const durationMins = Math.round((now.getTime() - checkinTime.getTime()) / 60000);
-  // Cap auto-checkout duration at the limit
-  const actualDuration = silent ? Math.min(durationMins, AUTO_CHECKOUT_MINUTES) : durationMins;
-  const checkoutTime = silent
-    ? new Date(checkinTime.getTime() + AUTO_CHECKOUT_MINUTES * 60000)
-    : now;
 
   // Update history entry with checkout data
   const history = DB.get('gymdock_history') || [];
-  // Find the matching entry by checkin timestamp
   const idx = history.findIndex(e => e.timestamp === session.checkinTime);
   if (idx !== -1) {
-    history[idx].checkoutTime = checkoutTime.toISOString();
-    history[idx].checkoutTimeStr = checkoutTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    history[idx].durationMins = actualDuration;
-    history[idx].autoCheckout = silent;
+    if (silent) {
+      // Auto-checkout: no end time, no duration — just mark as incomplete
+      history[idx].autoCheckout = true;
+    } else {
+      // Manual checkout: record everything
+      history[idx].checkoutTime = now.toISOString();
+      history[idx].checkoutTimeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      history[idx].durationMins = durationMins;
+    }
     DB.set('gymdock_history', history);
   }
 
@@ -1130,13 +1129,13 @@ function renderHistory() {
     return;
   }
 
-  // Stats
-  const completed = history.filter(e => e.durationMins);
+  // Stats (only count properly checked-out sessions)
+  const completed = history.filter(e => e.durationMins && !e.autoCheckout);
   const totalMins = completed.reduce((sum, e) => sum + e.durationMins, 0);
   const avgMins = completed.length ? Math.round(totalMins / completed.length) : 0;
   $('statTotal').textContent = history.length;
   $('statHours').textContent = formatDuration(totalMins);
-  $('statAvg').textContent = formatDuration(avgMins);
+  $('statAvg').textContent = completed.length ? formatDuration(avgMins) : '—';
   statsEl.style.display = 'flex';
 
   // List
@@ -1146,17 +1145,26 @@ function renderHistory() {
     const timeStr = e.checkoutTimeStr
       ? `${e.time} — ${e.checkoutTimeStr}`
       : e.time || formatTime(e.timestamp);
-    const badge = isActive
-      ? '<div class="history-badge" style="background:rgba(0,212,255,0.2);">● active</div>'
-      : e.durationMins
-        ? `<div class="history-badge">✓ ${formatDuration(e.durationMins)}</div>`
-        : '<div class="history-badge">✓ checked in</div>';
+    let badge, detail;
+    if (isActive) {
+      badge = '<div class="history-badge" style="background:rgba(0,212,255,0.2);">● active</div>';
+      detail = '';
+    } else if (e.autoCheckout) {
+      badge = '<div class="history-badge" style="background:rgba(255,68,68,0.12);color:var(--danger);">no checkout</div>';
+      detail = '';
+    } else if (e.durationMins) {
+      badge = `<div class="history-badge">✓ ${formatDuration(e.durationMins)}</div>`;
+      detail = `<div class="history-duration">${formatDuration(e.durationMins)} workout</div>`;
+    } else {
+      badge = '<div class="history-badge">✓ checked in</div>';
+      detail = '';
+    }
     return `
     <div class="history-item">
       <div>
         <div class="history-date">${e.date || formatDate(e.timestamp)}</div>
         <div class="history-time">${timeStr}</div>
-        ${e.durationMins ? `<div class="history-duration">${formatDuration(e.durationMins)} workout</div>` : ''}
+        ${detail}
       </div>
       <div class="history-right">
         ${badge}
