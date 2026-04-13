@@ -1,6 +1,6 @@
 // savvyGYM Service Worker
 // Bump CACHE version on every deploy to trigger updates
-const CACHE = 'savvygym-v9';
+const CACHE = 'savvygym-v10';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

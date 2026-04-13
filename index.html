@@ -669,7 +669,11 @@
           <span class="val" id="metaStatus">⏳ Sending…</span>
         </div>
       </div>
-      <button class="btn btn-ghost" id="btnBackFromSuccess">← Back</button>
+      <button class="btn btn-checkout" id="btnCheckOutFromSuccess">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        Finish workout
+      </button>
+      <button class="btn btn-ghost" id="btnBackFromSuccess">← Continue training</button>
     </div>
 
     <!-- ═══ SCREEN: History ═══ -->
@@ -893,6 +897,7 @@ setInterval(updateClock, 1000); // every second for smooth timer
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.screen;
+    if (target === 'screenCheckin') initCheckinScreen();
     if (target === 'screenHistory') renderHistory();
     if (target === 'screenSettings') renderSettings();
     showScreen(target);
@@ -982,15 +987,24 @@ $('btnRegister').addEventListener('click', () => {
   showToast('Profile saved');
 });
 
-// ── 1-tap Check-in
+// ── 1-tap Check-in (guarded against double check-in)
 $('btnCheckIn').addEventListener('click', () => {
   const profile = DB.get('gymdock_profile');
   if (!profile) return;
+  if (DB.get('gymdock_active_session')) {
+    showToast('Already checked in', true);
+    initCheckinScreen();
+    return;
+  }
   doCheckIn(profile);
 });
 
-// ── Switch user
+// ── Switch user (blocked during active session)
 $('btnSwitchUser').addEventListener('click', () => {
+  if (DB.get('gymdock_active_session')) {
+    showToast('Check out first before switching user', true);
+    return;
+  }
   $('profileSection').style.display = 'none';
   $('registerSection').style.display = 'flex';
   $('inputName').value = '';
@@ -1092,8 +1106,8 @@ function closeSession(session, silent) {
       url.searchParams.set('name', profile.name || '');
       url.searchParams.set('email', profile.email || '');
       url.searchParams.set('checkin', session.checkinTime);
-      url.searchParams.set('checkout', checkoutTime.toISOString());
-      url.searchParams.set('duration', actualDuration);
+      url.searchParams.set('checkout', now.toISOString());
+      url.searchParams.set('duration', durationMins);
       url.searchParams.set('gym', profile.gym || '');
       fetch(url.toString(), { mode: 'no-cors' }).catch(() => {});
     }
@@ -1109,7 +1123,20 @@ function formatDuration(mins) {
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
 
-// ── Back from success
+// ── Checkout from success screen
+$('btnCheckOutFromSuccess').addEventListener('click', () => {
+  const session = DB.get('gymdock_active_session');
+  if (session) {
+    closeSession(session, false);
+    showToast('Checked out');
+  }
+  showScreen('screenCheckin');
+  initCheckinScreen();
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  $('navCheckin').classList.add('active');
+});
+
+// ── Continue training (back from success, stay checked in)
 $('btnBackFromSuccess').addEventListener('click', () => {
   showScreen('screenCheckin');
   initCheckinScreen();
@@ -1213,6 +1240,10 @@ $('btnSaveSettings').addEventListener('click', () => {
 });
 
 $('btnClearProfile').addEventListener('click', () => {
+  if (DB.get('gymdock_active_session')) {
+    showToast('Check out first before deleting profile', true);
+    return;
+  }
   if (!confirm('Delete profile?')) return;
   DB.remove('gymdock_profile');
   initCheckinScreen();
