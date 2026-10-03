@@ -1,6 +1,11 @@
 // savvyGYM Service Worker
 // Bump CACHE version on every deploy to trigger updates
-const CACHE = 'savvygym-v10';
+//
+// OneSignal Web Push: imports their SW into ours so push events are handled
+// alongside our own caching. Both push handler and cache logic coexist here.
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+
+const CACHE = 'savvygym-v11';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

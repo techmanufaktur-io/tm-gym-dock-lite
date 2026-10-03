@@ -14,6 +14,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
+  <!-- OneSignal Web Push SDK -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
   <style>
     :root {
       --bg: #0a0a0a;
@@ -447,6 +450,61 @@
     .settings-input-wrap { width: 100%; }
     .settings-input-wrap input { font-size: 14px; padding: 12px 14px; }
 
+    /* ── Toggle switches (push opt-ins) ── */
+    .settings-row.toggle-row { align-items: flex-start; gap: 12px; }
+    .settings-row.toggle-row .s-text { flex: 1; min-width: 0; }
+    .settings-row.toggle-row .s-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+      font-weight: 400;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: var(--border);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+      margin-top: 2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .toggle-switch.on { background: var(--accent); }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-switch.on::after { transform: translateX(20px); }
+    .toggle-switch.disabled { opacity: 0.4; cursor: not-allowed; }
+    .push-warning {
+      padding: 12px 14px;
+      background: rgba(255,68,68,0.08);
+      border: 1px solid rgba(255,68,68,0.25);
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .push-info {
+      padding: 12px 14px;
+      background: rgba(0,212,255,0.06);
+      border: 1px solid rgba(0,212,255,0.18);
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
     .version-note { text-align: center; font-size: 11px; color: var(--muted); padding-top: 8px; }
 
     /* ── Rules Screen ── */
@@ -779,6 +837,42 @@
 
       <div class="divider"></div>
 
+      <!-- Push Notifications -->
+      <div class="settings-section">
+        <label>Push notifications</label>
+
+        <div class="settings-row toggle-row">
+          <div class="s-text">
+            <div class="s-label">Broadcast my check-in</div>
+            <div class="s-desc">Other users in your gym get a push when you check in.</div>
+          </div>
+          <div class="toggle-switch" id="toggleBroadcast" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+
+        <div class="settings-row toggle-row">
+          <div class="s-text">
+            <div class="s-label">Notify me about others</div>
+            <div class="s-desc">Get a push when someone else checks in to your gym.</div>
+          </div>
+          <div class="toggle-switch" id="toggleReceive" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+
+        <div class="settings-row" id="pushStatusRow" style="display:none">
+          <span class="s-label">Permission</span>
+          <span class="s-value" id="pushStatusValue">—</span>
+        </div>
+
+        <div class="push-warning" id="iosWarning" style="display:none">
+          On iOS push only works after adding savvyGYM to your home screen. Tap Share → "Add to Home Screen".
+        </div>
+
+        <div class="push-info" id="pushNotConfigured" style="display:none">
+          Push notifications are not configured yet.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
       <div class="settings-section">
         <div class="settings-row">
           <span class="s-label">Version</span>
@@ -851,6 +945,11 @@
 
 // ── Hier deine Apps Script URL eintragen ──
 const API_URL = 'https://script.google.com/macros/s/AKfycbws5SuXYpwixoUxsr-dMlJkCMefF3bjhm3gosCoUYdk8KkMsf_mFwGIcRTnu0cdUfUf/exec';
+
+// ── OneSignal Web Push App-ID (aus dem OneSignal Dashboard) ──
+// Solange dies "YOUR_..." enthält, bleibt Push deaktiviert.
+const ONESIGNAL_APP_ID = 'YOUR_ONESIGNAL_APP_ID';
+const PUSH_ENABLED = ONESIGNAL_APP_ID && !ONESIGNAL_APP_ID.startsWith('YOUR_');
 
 const DB = {
   get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -1064,6 +1163,9 @@ async function doCheckIn(profile) {
   } else {
     $('metaStatus').textContent = '💾 Saved locally (no backend)';
   }
+
+  // Notify other opted-in users (backend enforces opt-in checks)
+  notifyPresenceToOthers(entry);
 }
 
 // ── Check out
@@ -1229,6 +1331,7 @@ function renderSettings() {
   $('settingsGymName').value = s.gymName || '';
   const history = DB.get('gymdock_history') || [];
   $('settingsCheckinCount').textContent = history.length;
+  if (typeof updatePushStatusUI === 'function') updatePushStatusUI();
 }
 
 $('btnSaveSettings').addEventListener('click', () => {
@@ -1343,6 +1446,198 @@ $('installDismiss').addEventListener('click', () => {
   $('installBanner').classList.add('hidden');
   DB.set('gymdock_install_dismissed', true);
 });
+
+// ════════════════════════════════════════
+//  Web Push (OneSignal)
+// ════════════════════════════════════════
+
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+
+function getPushFlags() {
+  return DB.get('gymdock_push_flags') || { broadcastPresence: false, receivePresence: false };
+}
+function setPushFlag(key, value) {
+  const flags = getPushFlags();
+  flags[key] = value === true;
+  DB.set('gymdock_push_flags', flags);
+}
+
+if (PUSH_ENABLED) {
+  OneSignalDeferred.push(async function(OneSignal) {
+    try {
+      await OneSignal.init({
+        appId: ONESIGNAL_APP_ID,
+        serviceWorkerPath: 'sw.js',
+        serviceWorkerParam: { scope: '/' },
+        notifyButton: { enable: false },
+        allowLocalhostAsSecureOrigin: true
+      });
+      // If user has profile + already subscribed, re-sync identity & tags
+      const profile = DB.get('gymdock_profile');
+      if (profile?.email && OneSignal.User.PushSubscription.optedIn) {
+        try { await OneSignal.login(profile.email.toLowerCase()); } catch {}
+        await syncPushTags();
+      }
+    } catch (e) {
+      console.warn('OneSignal init failed', e);
+    }
+  });
+}
+
+async function ensurePushSubscribed() {
+  if (!PUSH_ENABLED) return false;
+  return new Promise(resolve => {
+    OneSignalDeferred.push(async function(OneSignal) {
+      try {
+        const perm = OneSignal.Notifications.permission;
+        if (perm !== true) {
+          await OneSignal.Notifications.requestPermission();
+          if (OneSignal.Notifications.permission !== true) {
+            resolve(false); return;
+          }
+        }
+        if (!OneSignal.User.PushSubscription.optedIn) {
+          await OneSignal.User.PushSubscription.optIn();
+        }
+        const profile = DB.get('gymdock_profile');
+        if (profile?.email) {
+          try { await OneSignal.login(profile.email.toLowerCase()); } catch {}
+        }
+        resolve(true);
+      } catch (e) {
+        console.warn('ensurePushSubscribed failed', e);
+        resolve(false);
+      }
+    });
+  });
+}
+
+async function syncPushTags() {
+  if (!PUSH_ENABLED) return;
+  const profile = DB.get('gymdock_profile');
+  if (!profile?.email) return;
+  const flags = getPushFlags();
+  return new Promise(resolve => {
+    OneSignalDeferred.push(async function(OneSignal) {
+      try {
+        await OneSignal.User.addTags({
+          gym: profile.gym || '',
+          company: profile.company || '',
+          userId: profile.email.toLowerCase(),
+          broadcastPresence: String(flags.broadcastPresence === true),
+          receivePresence: String(flags.receivePresence === true)
+        });
+      } catch (e) { console.warn('syncPushTags failed', e); }
+      resolve();
+    });
+  });
+}
+
+async function syncPushSubscriberToBackend() {
+  const profile = DB.get('gymdock_profile');
+  if (!profile?.email) return;
+  const apiUrl = API_URL || DB.get('gymdock_settings')?.apiUrl;
+  if (!apiUrl || apiUrl.includes('DEINE_ID_HIER')) return;
+  const flags = getPushFlags();
+  try {
+    const url = new URL(apiUrl);
+    url.searchParams.set('action', 'pushSubscribe');
+    url.searchParams.set('email', profile.email.toLowerCase());
+    url.searchParams.set('name', profile.name || '');
+    url.searchParams.set('gym', profile.gym || '');
+    url.searchParams.set('company', profile.company || '');
+    url.searchParams.set('broadcastPresence', String(flags.broadcastPresence === true));
+    url.searchParams.set('receivePresence', String(flags.receivePresence === true));
+    await fetch(url.toString(), { mode: 'no-cors' });
+  } catch (e) { /* swallow */ }
+}
+
+async function handleToggleClick(key, toggleEl) {
+  if (toggleEl.classList.contains('disabled')) return;
+  const profile = DB.get('gymdock_profile');
+  if (!profile?.email) {
+    showToast('Create your profile first', true);
+    return;
+  }
+  const wasOn = toggleEl.classList.contains('on');
+  // Turning ON: ensure permission + subscription before flipping
+  if (!wasOn) {
+    toggleEl.classList.add('disabled');
+    const ok = await ensurePushSubscribed();
+    toggleEl.classList.remove('disabled');
+    if (!ok) {
+      showToast('Push permission required', true);
+      updatePushStatusUI();
+      return;
+    }
+  }
+  setPushFlag(key, !wasOn);
+  toggleEl.classList.toggle('on');
+  toggleEl.setAttribute('aria-checked', String(!wasOn));
+  await syncPushTags();
+  await syncPushSubscriberToBackend();
+  updatePushStatusUI();
+  showToast(wasOn ? 'Disabled' : 'Enabled');
+}
+
+function updatePushStatusUI() {
+  const flags = getPushFlags();
+  const tBroadcast = $('toggleBroadcast');
+  const tReceive = $('toggleReceive');
+  if (!tBroadcast || !tReceive) return;
+
+  tBroadcast.classList.toggle('on', flags.broadcastPresence === true);
+  tReceive.classList.toggle('on', flags.receivePresence === true);
+  tBroadcast.setAttribute('aria-checked', String(flags.broadcastPresence === true));
+  tReceive.setAttribute('aria-checked', String(flags.receivePresence === true));
+
+  // Push not configured yet?
+  if (!PUSH_ENABLED) {
+    $('pushNotConfigured').style.display = 'block';
+    tBroadcast.classList.add('disabled');
+    tReceive.classList.add('disabled');
+    return;
+  } else {
+    $('pushNotConfigured').style.display = 'none';
+  }
+
+  // iOS Safari (not standalone) → push won't work
+  const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isIOSStandalone = window.navigator.standalone === true;
+  $('iosWarning').style.display = (isIOSDevice && !isIOSStandalone) ? 'block' : 'none';
+
+  // Permission status row
+  if ('Notification' in window) {
+    $('pushStatusRow').style.display = 'flex';
+    const p = Notification.permission;
+    $('pushStatusValue').textContent =
+      p === 'granted' ? '✓ Granted' :
+      p === 'denied'  ? '✗ Blocked in browser' :
+                        'Not asked yet';
+  }
+}
+
+$('toggleBroadcast').addEventListener('click', () => handleToggleClick('broadcastPresence', $('toggleBroadcast')));
+$('toggleReceive').addEventListener('click', () => handleToggleClick('receivePresence', $('toggleReceive')));
+$('toggleBroadcast').addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); $('toggleBroadcast').click(); } });
+$('toggleReceive').addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); $('toggleReceive').click(); } });
+
+// Trigger a presence push to other opted-in users (backend filters)
+function notifyPresenceToOthers(entry) {
+  if (!PUSH_ENABLED) return;
+  const flags = getPushFlags();
+  if (!flags.broadcastPresence) return;
+  const apiUrl = API_URL || DB.get('gymdock_settings')?.apiUrl;
+  if (!apiUrl || apiUrl.includes('DEINE_ID_HIER')) return;
+  try {
+    const url = new URL(apiUrl);
+    url.searchParams.set('action', 'notifyPresence');
+    url.searchParams.set('senderEmail', (entry.email || '').toLowerCase());
+    url.searchParams.set('senderName', entry.name || '');
+    url.searchParams.set('gym', entry.gym || '');
+    fetch(url.toString(), { mode: 'no-cors' }).catch(() => {});
+  } catch {}
+}
 </script>
 </body>
 </html>
